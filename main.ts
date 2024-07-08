@@ -13,7 +13,7 @@ const PORT = process.env.PORT ?? 3000;
 const app = express();
 
 const corsOptions = {
-  origin: '*', //Momentaneamente aceptara requests de cualquier lugar
+  origin: '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type'],
 };
@@ -30,7 +30,6 @@ app.get('/api/documentation', (req, res) => {
   res.sendFile(path.join(publicPath, 'documentation.html'));
 });
 
-// Manejo de errores de solicitud malformada y errores internos que no fueron capturados
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
       return res.status(400).json({ error: 'Solicitud mal formada: JSON inválido' });
@@ -43,4 +42,6 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-app.listen(PORT)
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+})

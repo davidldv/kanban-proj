@@ -2,9 +2,11 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { KanbanDB } from '../model/db-kanban.js';
 import { validate } from 'uuid';
+
 dotenv.config()
 
 const SECRET_KEY = process.env.SECRET_KEY
+
 export class UserController {
 
     static async checkSession (req, res, next) {

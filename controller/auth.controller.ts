@@ -4,16 +4,12 @@ import dotenv from 'dotenv';
 import { validateRegister, validateLogin } from '../schemas/schemas.js';
 import { KanbanDB } from '../model/db-kanban.js';
 
-
 dotenv.config();
 
 const SECRET_KEY = process.env.SECRET_KEY
 
-
 export class AuthController {
-
     static async login (req, res) {
-
         const validateRequest = validateLogin(req.body)
     
         if (validateRequest.error) {
