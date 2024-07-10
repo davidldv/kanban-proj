@@ -1,122 +1,212 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
+
+import { connect, Client } from 'ts-postgres';
 import bcrypt from 'bcrypt';
 
-dotenv.config();
-import * as marked from 'marked' ;
 
-export const pool = new pg.Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    password: process.env.DB_PASS,
-    database: process.env.DB_DATABASE,
-    port: process.env.DB_PORT
-})
 
 export class KanbanDB {
+    
+    private static client: Client | null = null;
 
-    static async searchUser(username) {
-        try {
-            return await pool.query(`SELECT username FROM users WHERE username = $1`, [username]);
-        } catch(e) { console.error(e); throw e; }
-    }
-
-    static async getPassword(username) {
-        try {
-            return await pool.query(`SELECT passwd FROM users WHERE username = $1`, [username]);
-        } catch(e) { console.error(e); throw e; }
-    }
-
-    static async getID(username) {
-        try {
-            return await pool.query(`SELECT id FROM users WHERE username = $1`, [username]);
-        } catch(e) { console.error(e); throw e; }
-    }
-
-    static async getAllUserSections(value) {
-        try {
-            let userData = [];
-            const sections_id = await pool.query(`SELECT title, id FROM section WHERE user_id = $1`, [value]);
-            const objPromises = sections_id.rows.map(async (section) => {
-                const card = await pool.query('SELECT id, title, content FROM cards WHERE section_id = $1', [section.id]);
-                const cardsWithHtml = card.rows.map(card => ({
-                    ...card,
-                    contentHtml: marked(card.content) // Convertir el contenido Markdown a HTML
-                }));
-                const obj = { section_id: section.id, section_title: section.title, cards: cardsWithHtml };
-                userData.push(obj);
+    private static async getClient(): Promise<Client> {
+      
+        if (!KanbanDB.client) {
+            KanbanDB.client = await connect({
+                user: 'postgres',
+                host: 'localhost',
+                password: '123456',
+                database: 'kaban',
+                port: 5432
             });
-            await Promise.all(objPromises);
-            return userData;
-        } catch(e) { console.error(e); throw e; }
+        }
+        return KanbanDB.client;
     }
-
-    static async getUserID(section_id) {
+    
+    static async searchUser(username: string) : Promise<Username | ErrorDB>{
         try {
-            return await pool.query(`SELECT user_id FROM section WHERE id = $1`, [section_id]);
-        } catch(e) { console.error(e); throw e; }
-    }
+            const client = await KanbanDB.getClient(); 
+            const data = await client.query(`SELECT username FROM users WHERE username = $1`, [username]);
+            if (data.rows.length === 0) return { username: ''}
+            return { username: data.rows[0][0] }; 
 
-    static async getSectionID(card_id) {
-        try {
-            return await pool.query(`SELECT section_id FROM cards WHERE id = $1`, [card_id]);
-        } catch(e) { console.error(e); throw e; }
-    }
+        } catch(e) { 
+            const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500 };
+            return error
+          }
+      }
 
-    static async addSection(title, user_id) {
+    static async getPassword(username: string) : Promise<Password | ErrorDB>{ 
         try {
-            return await pool.query(`INSERT INTO section (title, user_id) VALUES ($1, $2) RETURNING *`, [title, user_id]);
-        } catch (e) {
-            console.error(e);
-            throw e;
+            const client = await KanbanDB.getClient();
+
+            const data = await client.query(`SELECT passwd FROM users WHERE username = $1`, [username]);
+            if (data.rows.length > 0) {
+              return { passwd: data.rows[0][0] }; 
+          } else {
+              return { message: 'Incorrect user name or password', code: 401 }; 
+          }
+        } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
+        }
+
+  }
+
+    static async getID(username: string) : Promise<UserID | ErrorDB>{
+      try {
+          const client = await KanbanDB.getClient();
+          const data = await client.query(`SELECT id FROM users WHERE username = $1`, [username]);
+          if (data.rows.length === 0) return { message: 'No se encontró una id para el usuario especificado', code:404} as ErrorDB
+          return { id: data.rows[0][0] };
+
+      } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
         }
     }
 
-    static async addCards(title, content, section_id) {
-        try {
-            await pool.query(`INSERT INTO cards (title, content, section_id) VALUES ($1, $2, $3)`, [title, content, section_id]);
-        } catch (e) {
-            console.error(e);
-            throw e;
-        }
-    }
 
-    static async addUser(username, hashedPasswd, email) {
+    static async getAllUserSections(user_id: string): Promise<UserData | ErrorDB> {
         try {
-            await pool.query(`INSERT INTO users (username, passwd, email) VALUES ($1, $2, $3)`, [username, hashedPasswd, email]);
-        } catch (e) {
-            console.error(e);
-            throw e;
-        }
-    }
-
-    static async deleteSection(section_id) {
-        try {
-            return await pool.query(`DELETE FROM section WHERE id = $1 RETURNING *`, [section_id]);
-        } catch(e) { console.error(e); throw e; }
-    }
-
-    static async deleteCard(card_id) {
-        try {
-            return await pool.query(`DELETE FROM cards WHERE id = $1 RETURNING *`, [card_id]);
-        } catch(e) { console.error(e); throw e; }
-    }
-
-    static async updateUser(user_id, {username, email, password}) {
-        // TO DO: refactorizar esta porqueria usando objetos y carga dinamica de valores en la query
-        try {
-            if (username){
-                await pool.query(`UPDATE users SET username = $1 WHERE id = $2`, [username,user_id]);
+          const client = await KanbanDB.getClient();
+          let userdata: UserData = { sections: [] };
+            const sections_id = await client.query(`SELECT title, id FROM section WHERE user_id = $1`, [user_id]);            
+            for (const section of sections_id.rows) {
+              const cards = await client.query(`SELECT id, title, content FROM cards WHERE section_id = $1`, [section[1]]);
+              userdata.sections.push({ id: section[1], title: section[0], user_id: user_id, cards: cards.rows.map(card => ({ id: card[0], title: card[1], content: card[2], section_id: section[1] })) });
             }
-            if (email){
-                await pool.query(`UPDATE users SET email = $1 WHERE id = $2`, [email, user_id]);
-            }
-            if (password){
-                await pool.query(`UPDATE users SET passwd = $1 WHERE id = $2`, [await bcrypt.hash(password, 7), user_id]);
-            }     
-            return await pool.query('SELECT * FROM users WHERE id = $1', [user_id])
 
-        } catch(e) { console.error(e); throw e; }
+            if (sections_id.rows.length === 0) return { message: 'No se encontró seccion para la id especificada', code:404} as ErrorDB
+            return userdata
+        } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
+        }
     }
+
+
+    static async getUserID(section_id: string) : Promise<UserID | ErrorDB>{
+      try {
+          const client = await KanbanDB.getClient();
+          const data = await client.query(`SELECT user_id FROM section WHERE id = $1`, [section_id]);
+          if (data.rows.length === 0) return { message: 'No se encontró seccion para la id especificada', code:404} as ErrorDB
+          return { id: data.rows[0][0] };
+
+      } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
+        }
+    }
+
+    static async getSectionID(card_id: string) : Promise<SectionID | ErrorDB>{
+      try {
+          const client = await KanbanDB.getClient();
+          const data = await client.query(`SELECT section_id FROM cards WHERE id = $1`, [card_id]);
+          if (data.rows.length === 0) return { message: 'No se encontró sección para la ID especificada', code:404} as ErrorDB
+          return { id: data.rows[0][0] };
+
+      } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
+        }
+    }
+    static async addSection(title: string, user_id: string): Promise<Section | ErrorDB> {
+      try {
+        const client = await KanbanDB.getClient();
+        const data = await client.query(`INSERT INTO section (user_id, title) VALUES ($1, $2) RETURNING *`, [user_id, title]);
+        return { id: data.rows[0][0], title: data.rows[0][2], user_id: data.rows[0][1], cards: [] };
+      } catch(e) { 
+        const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+        return error
+      }
+    }
+
+    static async addCards(title: string, content: string, section_id: string): Promise<Card | ErrorDB> {
+      try {
+        const client = await KanbanDB.getClient();
+        const data = await client.query(`INSERT INTO cards (title, content, section_id) VALUES ($1, $2, $3) RETURNING *`, [title, content, section_id]);
+        return { id: data.rows[0][0], title: data.rows[0][1], content: data.rows[0][2], section_id: data.rows[0][3] };
+      } catch (e) {
+        const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+        return error;
+      }
+    }
+
+    static async addUser(username: string, hashedPasswd: string, email: string): Promise<User | ErrorDB>{
+        try {
+            const client = await KanbanDB.getClient();
+            const data = await client.query(`INSERT INTO users (username, passwd, email) VALUES ($1, $2, $3) RETURNING *`, [username, hashedPasswd, email]);
+            return { id: data.rows[0][0], username: data.rows[0][1], passwd: data.rows[0][2], email: data.rows[0][3] };
+        } catch (e) {
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error;
+        }
+    }
+    static async deleteSection(section_id: string): Promise<Section | ErrorDB>{
+      try {
+        const client = await KanbanDB.getClient();
+        const data = await client.query(`DELETE FROM section WHERE id = $1 RETURNING *`, [section_id]);
+        if (data.rows.length === 0) return { message: 'No se encontró la seccion', code:404} as ErrorDB
+        const deletedCards = await client.query(`DELETE FROM cards WHERE section_id = $1 RETURNING *`, [section_id]);
+        const cards = deletedCards.rows.map(card => ({ id: card[0], title: card[1], content: card[2], section_id: card[3] }));
+        return { id: data.rows[0][0], title: data.rows[0][1], user_id: data.rows[0][2], cards: cards };
+      } catch (e) {
+        const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+        return error;
+      }
+    }
+    static async deleteCard(card_id: string): Promise<Card | ErrorDB> {
+      try {
+        const client = await KanbanDB.getClient();
+        const data = await client.query(`DELETE FROM cards WHERE id = $1 RETURNING *`, [card_id]);
+        if (data.rows.length === 0) return { message: 'No se encontró la carta', code:404} as ErrorDB
+        return { id: data.rows[0][0], title: data.rows[0][1], content: data.rows[0][2], section_id: data.rows[0][3] };
+      } catch(e) { console.error(e); throw e; }
+    }
+
+    static async updateUser(user_id: string, { username, email, password }: { username?: string, email?: string, password?: string }): Promise<User | ErrorDB> {
+      try {
+        const client = await KanbanDB.getClient();
+        const updates: string[] = [];
+        const values: any[] = [];
+
+        if (username) {
+          updates.push('username = $1');
+          values.push(username);
+        }
+        if (email) {
+          updates.push('email = $2');
+          values.push(email);
+        }
+        if (password) {
+          updates.push('passwd = $3');
+          values.push(await bcrypt.hash(password, 7));
+        }
+
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${values.length + 1}`;
+        await client.query(query, [...values, user_id]);
+
+        const data = await client.query('SELECT * FROM users WHERE id = $1', [user_id]);
+        if (data.rows.length === 0) return { message: 'No se encontró el usuario especificado', code:404} as ErrorDB
+        return { id: data.rows[0][0], username: data.rows[0][1], passwd: data.rows[0][2], email: data.rows[0][3] };
+      } catch (e) {
+        const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+        return error;
+      }
+    }
+
+    static async getUserInfo(user_id: string) : Promise<UserInfo | ErrorDB>{
+      try {
+          const client = await KanbanDB.getClient();
+          const data = await client.query(`SELECT username, email FROM users WHERE id = $1`, [user_id]);
+          if (data.rows.length === 0) return { message: 'No se encontró un usuario para el id especificado', code:404} as ErrorDB
+          return { username: data.rows[0][0], email: data.rows[0][1] };
+
+      } catch(e) { 
+          const error: ErrorDB = { message: 'Error en la base de datos: ' + (e as Error).message, code:500  };
+          return error
+        }
+    }
+
+
 }
-

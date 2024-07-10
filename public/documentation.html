@@ -3,181 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentación de API</title>
+    <title>Documentación de la API</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #333;
-            color: #ddd;
-            margin: 20px;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        h1, h2, h3 {
-            color: #eee;
+        h1 {
+            color: #8f8d91;
+            margin-bottom: 40px;
         }
         .endpoint {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            width: 80%;
             margin-bottom: 20px;
-            padding: 10px;
-            background-color: #444;
-            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
-        .endpoint-title {
-            font-size: 1.5em;
-            margin-bottom: 10px;
+        h2 {
+            color: #03dac6;
+            text-align: center;
         }
-        .endpoint-description {
-            margin-bottom: 10px;
+        h3 {
+            color: #9a989c;
         }
-        .endpoint-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .endpoint-table th, .endpoint-table td {
-            border: 1px solid #666;
-            padding: 8px;
+        p, ul {
             text-align: left;
         }
-        .endpoint-table th {
-            background-color: #555;
-            color: #ddd;
-        }
-        .endpoint-table td {
-            background-color: #666;
-            color: #ddd;
+        .error {
+            color: #cf6679;
         }
     </style>
 </head>
 <body>
-    <h1>Documentación de API</h1>
+    <h1>Documentación de la API</h1>
 
     <div class="endpoint">
-        <div class="endpoint-title">POST /api/auth/login</div>
-        <div class="endpoint-description">
-            <p>Endpoint para iniciar sesión y obtener un token de acceso.</p>
-            <p>Recibe en el body: <code>{ "username": "string", "passwd": "string" }</code></p>
-            <p>Devuelve en JSON:</p>
-            <table class="endpoint-table">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                </tr>
-                <tr>
-                    <td>user_id</td>
-                    <td>uuid del usuario</td>
-                </tr>
-                <tr>
-                    <td>token</td>
-                    <td>JWT que representa la sesion</td>
-                </tr>
-            </table>
-            <p>Establece un JWT en la cookie 'access-token'.</p>
-            <p>Errores: </p>
-            <p>400 - Request malhecho o malformado </p>
-            <p>401 - Nombre o usuario incorrecto </p>
-        </div>
+        <h2>POST /api/auth/login</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>username</code> (string) y <code>passwd</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Nada, setea una cookie con JWT</p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">400 - Login inválido</li>
+            <li class="error">401 - Nombre de usuario o contraseña incorrectos</li>
+            <li class="error">500 - Internal server error</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">POST /api/auth/logout</div>
-        <div class="endpoint-description">
-            <p>Endpoint para cerrar sesión.</p>
-            <p>Borra la cookie de sesion.</p>
-        </div>
+        <h2>POST /api/auth/register</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>username</code> (string), <code>passwd</code> (string), <code>email</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Usuario creado: <code>{ id, username, email, passwd }</code></p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">400 - Registro inválido</li>
+            <li class="error">401 - Nombre de usuario ya existe</li>
+            <li class="error">500 - Internal server error</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">POST /api/auth/register</div>
-        <div class="endpoint-description">
-            <p>Endpoint para registrar un nuevo usuario.</p>
-            <p>Recibe en el body: <code>{ "username": "string", "passwd": "string" }</code></p>
-            <p>No devuelve ningún valor.</p>
-            <p>Errores: </p>
-            <p>400 - Request malhecho o malformado </p>
-            <p>401 - El usuario ya existe </p>
-        </div>
+        <h2>POST /api/auth/logout</h2>
+        <h3>Recibe:</h3>
+        <p>Nada</p>
+        <h3>Devuelve:</h3>
+        <p>Nada, limpia la token</p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li>Ninguno</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">GET /api/user</div>
-        <div class="endpoint-description">
-            <p>Endpoint para obtener datos del usuario.</p>
-            <p>Devuelve en JSON un objeto con los datos del usuario:</p>
-            <table class="endpoint-table">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                </tr>
-                <tr>
-                    <td>section_id</td>
-                    <td>Identificador de la sección del usuario</td>
-                </tr>
-                <tr>
-                    <td>cards</td>
-                    <td>Array de objetos de cartas del usuario</td>
-                </tr>
-            </table>
-        </div>
+        <h2>GET /api/user</h2>
+        <h3>Recibe:</h3>
+        <p>Nada</p>
+        <h3>Devuelve:</h3>
+        <p>Datos de los usuarios: <code>{ sections: [{ "title": "section title", "cards": [ArrayCards] }] }</code></p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">500 - Internal server error</li>
+            <li class="error">404 - No se encontró id para la sección especificada</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">POST /api/user/section</div>
-        <div class="endpoint-description">
-            <p>Endpoint para crear una nueva sección para el usuario.</p>
-            <p>Recibe en el body: <code>{ "title": "string" }</code></p>
-            <p>Devuelve en JSON un objeto con los detalles de la sección creada.</p>
-        </div>
-        <p>Errores: </p>
-        <p>400 - Mal request, falta el titulo </p>
+        <h2>POST /api/user/section</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>title</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto sección recién creado: <code>{ id: idsection, user_id: idusuario, title: título }</code></p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">400 - Missing title field</li>
+            <li class="error">500 - Internal server error</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">DELETE /api/user/section</div>
-        <div class="endpoint-description">
-            <p>Endpoint para eliminar una sección del usuario.</p>
-            <p>Recibe en el body: <code>{ "section_id": "string" }</code></p>
-            <p>Devuelve en JSON un objeto con los detalles de la sección eliminada.</p>
-        </div>
-        <p>Errores: </p>
-        <p>401 - UUID incorrecta </p>
-        <p>500 - Seccion inexistente </p>
-        <p>403 - Seccion prohibida, modificacion no autorizada </p>
+        <h2>DELETE /api/user/section</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>section_id</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto sección recién borrado</p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">404 - No se encontró sección especificada</li>
+            <li class="error">403 - Prohibido, no tiene acceso para borrar esta sección</li>
+            <li class="error">500 - Error interno del servidor</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">POST /api/user/card</div>
-        <div class="endpoint-description">
-            <p>Endpoint para crear una nueva carta para el usuario.</p>
-            <p>Recibe en el body: <code>{ "title": "string", "content": "string", "section_id": "string" }</code></p>
-            <p>Devuelve en JSON un objeto con los detalles de la carta creada.</p>
-        </div>
-        <p>Errores: </p>
-        <p>400 - Mal request, faltan campos </p>
-        <p>401 - UUID incorrecta </p>
-        <p>403 - Seccion prohibida, modificacion no autorizada </p>
+        <h2>POST /api/user/card</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>title</code> (string), <code>content</code> (string), <code>section_id</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto carta recién creado: <code>{ id: idcarta, section_id: idsection, title: título, content: contenido }</code></p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">400 - Missing fields</li>
+            <li class="error">500 - Internal server error</li>
+            <li class="error">401 - UUID de sección incorrecto</li>
+            <li class="error">403 - Prohibido, esta sección no pertenece al usuario</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">DELETE /api/user/card</div>
-        <div class="endpoint-description">
-            <p>Endpoint para eliminar una carta del usuario.</p>
-            <p>Recibe en el body: <code>{ "card_id": "string" }</code></p>
-            <p>Devuelve en JSON un objeto con los detalles de la carta eliminada.</p>
-        </div>
-        <p>Errores: </p>
-        <p>400 - Reques malformado </p>
-        <p>401 - UUID incorrecta </p>
-        <p>500 - La carta no existe </p>
-        <p>403 - Seccion prohibida, modificacion no autorizada </p>
+        <h2>DELETE /api/user/card</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con <code>card_id</code> (string)</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto carta recién borrado</p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">400 - Missing card id field</li>
+            <li class="error">403 - Prohibido, no tiene acceso para borrar esta carta</li>
+            <li class="error">500 - Error interno del servidor</li>
+            <li class="error">404 - No se encontró la carta especificada</li>
+        </ul>
     </div>
 
     <div class="endpoint">
-        <div class="endpoint-title">PATCH /api/user/account</div>
-        <div class="endpoint-description">
-            <p>Endpoint para actualizar la cuenta de usuario.</p>
-            <p>Recibe en el body: <code>{ "username": "string", "email": "string", "password": "string" }</code></p>
-            <p>Devuelve en JSON un objeto con los datos de usuario actualizados.</p>
-        </div>
+        <h2>PATCH /api/user/account</h2>
+        <h3>Recibe:</h3>
+        <p>Body: JSON con los datos a actualizar (<code>username</code>, <code>email</code>, <code>password</code>)</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto del usuario con los datos actualizados</p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">404 - No se encontro el usuario especificado</li>
+            <li class="error">500 - Error interno del servidor</li>
+        </ul>
+    </div>
+
+    <div class="endpoint">
+        <h2>GET /api/user/account</h2>
+        <h3>Recibe:</h3>
+        <p>Nada</p>
+        <h3>Devuelve:</h3>
+        <p>Objeto del usuario recién creado con solo <code>username</code> y <code>email</code></p>
+        <h3>Posibles errores:</h3>
+        <ul>
+            <li class="error">404 - No se encontro el usuario especificado</li>
+            <li class="error">500 - Error interno del servidor</li>
+        </ul>
     </div>
 
 </body>

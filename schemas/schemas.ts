@@ -13,7 +13,9 @@ const registerSchema = z.object({
         invalid_type_error: 'Email must be a string',
         required_error: 'Email field is required'
     }).max(40)
-})
+}
+
+)
 
 const loginSchema = z.object({
     username: z.string({
@@ -24,13 +26,15 @@ const loginSchema = z.object({
         invalid_type_error: 'Password must be a string',
         required_error: 'Password field is required'
     }).max(255)
-})
+}
 
-export function validateRegister(body){
+)
+
+export function validateRegister(body: any){
    return registerSchema.safeParse(body);
 }
 
-export function validateLogin(body){
+export function validateLogin(body: any){
     return loginSchema.safeParse(body);
  }
  
